@@ -1,5 +1,6 @@
 package io.iterating.s3.consumer.messaging;
 
+import java.time.Instant;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -9,16 +10,24 @@ import org.junit.jupiter.api.Test;
 
 class S3ObjectEventTest {
 
+    private static final String COMMAND_ID = "1d47b09b-67d1-438c-a86e-8d1f611ac080";
+    private static final Instant REQUESTED_AT = Instant.parse("2026-08-23T12:00:00Z");
+
+    private S3ObjectEvent event(String bucket, String path, List<String> objects) {
+        return new S3ObjectEvent(
+                COMMAND_ID, REQUESTED_AT, "blog.draft.updated", 26, bucket, path, objects);
+    }
+
     @Test
     void validatesRequiredFields() {
-        S3ObjectEvent event = new S3ObjectEvent("source-bucket", "public/draft/21/", List.of("file.png"));
+        S3ObjectEvent event = event("source-bucket", "public/draft/21/", List.of("file.png"));
 
         assertThatCode(event::validate).doesNotThrowAnyException();
     }
 
     @Test
     void rejectsMissingBucket() {
-        S3ObjectEvent event = new S3ObjectEvent("", "public/draft/21/", List.of("file.png"));
+        S3ObjectEvent event = event("", "public/draft/21/", List.of("file.png"));
 
         assertThatThrownBy(event::validate)
                 .isInstanceOf(InvalidS3ObjectEventException.class)
@@ -26,30 +35,36 @@ class S3ObjectEventTest {
     }
 
     @Test
-    void allowsMissingPath() {
-        S3ObjectEvent event = new S3ObjectEvent("source-bucket", " ", List.of("file.png"));
+    void rejectsMissingPath() {
+        S3ObjectEvent event = event("source-bucket", null, List.of("file.png"));
 
-        assertThatCode(event::validate).doesNotThrowAnyException();
+        assertThatThrownBy(event::validate)
+                .isInstanceOf(InvalidS3ObjectEventException.class)
+                .hasMessageContaining("path");
     }
 
     @Test
-    void allowsEmptyObjects() {
-        S3ObjectEvent event = new S3ObjectEvent("source-bucket", "public/draft/21/", List.of());
+    void rejectsMissingObjects() {
+        S3ObjectEvent event = event("source-bucket", "public/draft/21/", null);
 
-        assertThatCode(event::validate).doesNotThrowAnyException();
+        assertThatThrownBy(event::validate)
+                .isInstanceOf(InvalidS3ObjectEventException.class)
+                .hasMessageContaining("objects");
     }
 
     @Test
     void keysJoinsPathAndObjects() {
-        S3ObjectEvent event = new S3ObjectEvent("source-bucket", "public/draft/21/", List.of("a.png", "b.png"));
+        S3ObjectEvent event = event("source-bucket", "public/draft/21/", List.of("a.png", "b.png"));
 
         assertThat(event.keys()).containsExactly("public/draft/21/a.png", "public/draft/21/b.png");
     }
 
     @Test
-    void keysAddsTrailingSlashToPathIfMissing() {
-        S3ObjectEvent event = new S3ObjectEvent("source-bucket", "public/draft/21", List.of("a.png"));
+    void rejectsPathWithoutTrailingSlash() {
+        S3ObjectEvent event = event("source-bucket", "public/draft/21", List.of("a.png"));
 
-        assertThat(event.keys()).containsExactly("public/draft/21/a.png");
+        assertThatThrownBy(event::validate)
+                .isInstanceOf(InvalidS3ObjectEventException.class)
+                .hasMessageContaining("slash");
     }
 }

@@ -7,6 +7,8 @@ import org.springframework.context.annotation.Import;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.iterating.s3.consumer.messaging.S3ObjectEventMessageHandler;
+import io.iterating.s3.consumer.messaging.NatsS3ObjectsReconciledPublisher;
+import io.iterating.s3.consumer.messaging.S3ObjectsReconciledPublisher;
 import io.iterating.s3.consumer.service.S3ReconciliationService;
 import io.iterating.s3.nats.config.NatsConsumerConfiguration;
 import io.iterating.s3.nats.messaging.MessageHandler;
@@ -22,7 +24,16 @@ public class ConsumerConfiguration {
     }
 
     @Bean
-    MessageHandler messageHandler(ObjectMapper objectMapper, S3ReconciliationService reconciliationService) {
-        return new S3ObjectEventMessageHandler(objectMapper, reconciliationService);
+    S3ObjectsReconciledPublisher s3ObjectsReconciledPublisher(
+            io.nats.client.Connection connection, ObjectMapper objectMapper) throws java.io.IOException {
+        return new NatsS3ObjectsReconciledPublisher(connection, objectMapper);
+    }
+
+    @Bean
+    MessageHandler messageHandler(
+            ObjectMapper objectMapper,
+            S3ReconciliationService reconciliationService,
+            S3ObjectsReconciledPublisher reconciledPublisher) {
+        return new S3ObjectEventMessageHandler(objectMapper, reconciliationService, reconciledPublisher);
     }
 }

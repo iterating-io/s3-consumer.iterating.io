@@ -17,16 +17,21 @@ The consumer expects JSON payloads like this:
 
 ```json
 {
+    "commandId": "1d47b09b-67d1-438c-a86e-8d1f611ac080",
+    "requestedAt": "2026-08-23T12:00:00Z",
+    "sourceEvent": "blog.draft.updated",
+    "draftId": 26,
     "bucket": "source-bucket",
-    "path": "public/draft/21",
-    "objects": ["keep-this.png", "public/draft/21/leave-this-too.jpg"]
+    "path": "public/draft/21/",
+    "objects": ["first.png", "second.png"]
 }
 ```
 
-- `bucket` is required.
-- `path` is optional. When present, it scopes the listing prefix.
-- `objects` is optional and is treated as an exclusion list. Objects listed here are skipped; all other objects under `bucket/path` are backed up and deleted.
-- Unknown JSON fields are ignored so the producer can evolve the schema gradually.
+- `commandId`, `requestedAt`, `sourceEvent`, `draftId`, `bucket`, `path`, and `objects` are required.
+- After successful reconciliation, the consumer publishes a matching completion message to `s3.objects.reconciled`.
+- `path` is a common prefix and must end in `/` when non-empty.
+- `objects` contains the object filenames relative to `path`; only the specified objects are backed up and deleted.
+- Unknown JSON fields and blank object names are rejected to match the AsyncAPI schema.
 
 ## Configuration
 
@@ -36,9 +41,9 @@ Runtime configuration is bound from environment variables through `consumer/src/
 | ----------------------- | ----------------------- | ----------------------------------------------------------------------------------------------------------------- |
 | `NATS_SERVERS`          | `nats://localhost:4222` | Comma-separated NATS server URLs                                                                                  |
 | `NATS_CREDENTIALS_PATH` | empty                   | Path to NATS `.creds` file or inline credentials content. Multiline values and escaped `\n` values are supported. |
-| `NATS_STREAM`           | `s3-events`             | JetStream stream name                                                                                             |
+| `NATS_STREAM`           | `S3_EVENTS`             | JetStream stream name                                                                                             |
 | `NATS_DURABLE`          | `s3-isolator`           | Durable consumer name                                                                                             |
-| `NATS_FILTER_SUBJECT`   | `s3.object.delete`      | Subject/filter to consume                                                                                         |
+| `NATS_FILTER_SUBJECT`   | `s3.objects.reconcile`  | Subject/filter to consume                                                                                         |
 | `NATS_BATCH_SIZE`       | `10`                    | Pull batch size                                                                                                   |
 | `S3_BACKUP_BUCKET`      | empty                   | Required backup bucket; backups are stored as `<backup-bucket>/<source-bucket>/<original/path>`                   |
 | `AWS_REGION`            | `ap-northeast-2`        | AWS region                                                                                                        |
@@ -49,23 +54,21 @@ Runtime configuration is bound from environment variables through `consumer/src/
 
 **Security note:** The `consumer/src/main/resources/application.yml` file previously contained example AWS credentials. These have been removed; do not commit real credentials. For local testing, set `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, and optionally `AWS_SESSION_TOKEN` in your environment.
 
-The local Spring profile defaults `NATS_CREDENTIALS_PATH` to `consumer/reconcile.consumer.creds`, which is resolved from the repository root when you run `./gradlew :consumer:bootRun`.
+## Run locally
+
+Copy the local-only environment template, set the NATS credentials path and backup bucket, then run the worker. `.envrc` supplies the non-sensitive AsyncAPI defaults, including the `S3_EVENTS` stream and `s3.objects.reconcile` subject.
+
+```bash
+cp .env.example .env
+# Edit .env with your local values.
+./run.sh
+```
+
+If you use direnv, run `direnv allow` once to load `.envrc` automatically.
 
 ### Local profile (development)
 
-For local development, you can use a profile-specific configuration. Copy the example file and enable the `local` profile. Do not commit the copied file if it contains real credentials.
-By default the application activates the `local` profile when `SPRING_PROFILES_ACTIVE` is not set. Override this with `SPRING_PROFILES_ACTIVE` in CI or production environments.
-
-```bash
-cp consumer/src/main/resources/application-local.yml.example \
-    consumer/src/main/resources/application-local.yml
-
-# Run with the local profile active
-SPRING_PROFILES_ACTIVE=local ./gradlew :consumer:bootRun
-
-# Or run tests with the local profile
-SPRING_PROFILES_ACTIVE=local ./gradlew :consumer:test
-```
+The local profile is active by default through `.envrc`. In CI or production, set `SPRING_PROFILES_ACTIVE=prod` and supply all required environment variables externally.
 
 ## Development
 
@@ -81,7 +84,7 @@ Build the application:
 ./gradlew :consumer:build
 ```
 
-Run locally:
+Run directly with explicit settings:
 
 ```bash
 S3_BACKUP_BUCKET=my-backup-bucket \

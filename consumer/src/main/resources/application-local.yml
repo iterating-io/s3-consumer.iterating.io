@@ -14,22 +14,19 @@ management:
 nats:
     servers: ${NATS_SERVERS:nats://nats.iterating.io:34222}
     connection-name: ${NATS_CONNECTION_NAME:s3-reconcile-connection}
-    # Resolved relative to the repo root when running `./gradlew :consumer:bootRun`.
-    credentials-path: ${NATS_CREDENTIALS_PATH:consumer/reconcile.consumer.creds}
-    stream: ${NATS_STREAM:reconcile}
+    credentials-path: ${NATS_CREDENTIALS_PATH:}
+    stream: ${NATS_STREAM:S3_EVENTS}
     durable: ${NATS_DURABLE:s3-reconcile}
-    filter-subject: ${NATS_FILTER_SUBJECT:s3.reconcile}
+    filter-subject: ${NATS_FILTER_SUBJECT:s3.objects.reconcile}
     batch-size: ${NATS_BATCH_SIZE:10}
     fetch-timeout: ${NATS_FETCH_TIMEOUT:5s}
     idle-delay: ${NATS_IDLE_DELAY:5s}
 
 s3:
-    backup-bucket: ${S3_BACKUP_BUCKET:backup}
+    backup-bucket: ${S3_BACKUP_BUCKET:}
     region: ${AWS_REGION:us-east-1}
-    endpoint-override: ${AWS_ENDPOINT_URL:https://s3.iterating.io}
+    endpoint-override: ${AWS_ENDPOINT_URL:}
 
-# AWS credentials (avoid committing real secrets). You can set these
-# values directly here for local testing, or prefer externalized config.
 aws:
-    access-key: ${AWS_ACCESS_KEY_ID:QnavXAzki0ytXRQABTdJ}
-    secret-key: ${AWS_SECRET_ACCESS_KEY:YXaAl7BNX7L2ce4TXa5Mtkwx9obomERUzfe0fHzI}
+    access-key: ${AWS_ACCESS_KEY_ID:}
+    secret-key: ${AWS_SECRET_ACCESS_KEY:}

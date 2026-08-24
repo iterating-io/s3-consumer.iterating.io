@@ -1,15 +1,16 @@
 package io.iterating.s3.consumer.messaging;
 
-import java.util.ArrayList;
-import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
+import java.time.Instant;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.JsonNode;
 
 import io.iterating.s3.consumer.service.S3ReconciliationException;
 import io.iterating.s3.consumer.service.S3ReconciliationService;
@@ -20,57 +21,39 @@ import software.amazon.awssdk.services.s3.model.S3Exception;
 public class S3ObjectEventMessageHandler implements MessageHandler {
 
     private static final Logger log = LoggerFactory.getLogger(S3ObjectEventMessageHandler.class);
+    private static final Set<String> PAYLOAD_FIELDS = Set.of(
+            "commandId", "requestedAt", "sourceEvent", "draftId", "bucket", "path", "objects");
+    private static final Set<String> SOURCE_EVENTS = Set.of(
+            "blog.draft.created", "blog.draft.updated", "blog.draft.deleted");
 
     private final ObjectMapper objectMapper;
     private final S3ReconciliationService reconciliationService;
+    private final S3ObjectsReconciledPublisher reconciledPublisher;
 
-    public S3ObjectEventMessageHandler(ObjectMapper objectMapper, S3ReconciliationService reconciliationService) {
+    public S3ObjectEventMessageHandler(
+            ObjectMapper objectMapper,
+            S3ReconciliationService reconciliationService,
+            S3ObjectsReconciledPublisher reconciledPublisher) {
         this.objectMapper = objectMapper;
         this.reconciliationService = reconciliationService;
+        this.reconciledPublisher = reconciledPublisher;
     }
 
     @Override
-    public void handle(byte[] payload, String subject) throws InvalidMessageException {
+    public void handle(byte[] payload, String subject) throws Exception {
         try {
-            S3ObjectEvent event = objectMapper.readValue(payload, S3ObjectEvent.class);
-            event.validate();
+            S3ObjectEvent event = parsePayload(payload);
+            List<String> keys = event.keys();
 
-            // Interpret `objects` as an exclusion list: items present in `objects`
-            // must NOT be touched. Reconcile (backup+delete) all objects under the
-            // given prefix except the ones explicitly listed in `objects`. Normalize
-            // each provided object entry into a full S3 key within the prefix so
-            // clients may send either bare filenames or full keys.
-            List<String> objects = event.objects();
-            String normalizedPrefix = (event.path() == null || event.path().isBlank()) ? "" : (event.path().endsWith("/") ? event.path() : event.path() + "/");
-            List<String> excludeKeysList;
-            if (objects == null || objects.isEmpty()) {
-                excludeKeysList = List.of();
-            } else {
-                var tmp = new ArrayList<String>(objects.size());
-                for (String o : objects) {
-                    if (o == null || o.isBlank()) {
-                        continue;
-                    }
-                    String cleaned = o.replaceAll("^/+", "");
-                    if (!normalizedPrefix.isEmpty() && cleaned.startsWith(normalizedPrefix)) {
-                        tmp.add(cleaned);
-                    } else {
-                        tmp.add(normalizedPrefix + cleaned);
-                    }
-                }
-                excludeKeysList = List.copyOf(tmp);
+            log.info("S3 objects reconcile requested subject={} sourceBucket={} path={} objectCount={}",
+                    subject, event.bucket(), event.path(), keys.size());
+            for (String key : keys) {
+                reconciliationService.backup(event.bucket(), key);
             }
-            Set<String> excludeKeys = new HashSet<>(excludeKeysList);
-
-            log.info("S3 prefix reconcile requested subject={} sourceBucket={} prefix={} excludeCount={}",
-                    subject, event.bucket(), event.path(), excludeKeys.size());
-            if (!excludeKeys.isEmpty()) {
-                log.info("Excluding keys from reconcile subject={} excludes={}", subject, excludeKeysList);
-            }
-
-            reconciliationService.reconcile(event.bucket(), event.path(), excludeKeys);
-            log.info("S3 prefix reconciled subject={} sourceBucket={} prefix={} excluded={}",
-                    subject, event.bucket(), event.path(), excludeKeys.size());
+            reconciledPublisher.publish(new S3ObjectsReconciled(
+                    event.commandId(), Instant.now(), event.draftId(), event.bucket(), event.path(), event.objects()));
+            log.info("S3 objects reconciled subject={} sourceBucket={} path={} objectCount={}",
+                    subject, event.bucket(), event.path(), keys.size());
         } catch (JsonProcessingException | InvalidS3ObjectEventException exception) {
             throw new InvalidMessageException("Invalid S3 object event", exception);
         } catch (java.io.IOException exception) {
@@ -90,6 +73,77 @@ public class S3ObjectEventMessageHandler implements MessageHandler {
             }
             // Otherwise propagate runtime exception to trigger retry behavior
             throw exception;
+        }
+    }
+
+    private S3ObjectEvent parsePayload(byte[] payload) throws java.io.IOException, InvalidS3ObjectEventException {
+        JsonNode root = objectMapper.readTree(payload);
+        if (root == null || !root.isObject()) {
+            throw new InvalidS3ObjectEventException("S3 object event must be a JSON object");
+        }
+
+        Iterator<String> fields = root.fieldNames();
+        while (fields.hasNext()) {
+            String field = fields.next();
+            if (!PAYLOAD_FIELDS.contains(field)) {
+                throw new InvalidS3ObjectEventException("S3 object event contains an unsupported field: " + field);
+            }
+        }
+
+        JsonNode commandId = root.get("commandId");
+        JsonNode requestedAt = root.get("requestedAt");
+        JsonNode sourceEvent = root.get("sourceEvent");
+        JsonNode draftId = root.get("draftId");
+        JsonNode bucket = root.get("bucket");
+        JsonNode path = root.get("path");
+        JsonNode objects = root.get("objects");
+        if (commandId == null || !commandId.isTextual() || !isUuid(commandId.textValue())) {
+            throw new InvalidS3ObjectEventException("S3 object event commandId must be a UUID string");
+        }
+        if (requestedAt == null || !requestedAt.isTextual() || !isInstant(requestedAt.textValue())) {
+            throw new InvalidS3ObjectEventException("S3 object event requestedAt must be a date-time string");
+        }
+        if (sourceEvent == null || !sourceEvent.isTextual() || !SOURCE_EVENTS.contains(sourceEvent.textValue())) {
+            throw new InvalidS3ObjectEventException("S3 object event sourceEvent is invalid");
+        }
+        if (draftId == null || !draftId.isIntegralNumber() || draftId.longValue() < 1) {
+            throw new InvalidS3ObjectEventException("S3 object event draftId must be a positive integer");
+        }
+        if (bucket == null || !bucket.isTextual() || bucket.textValue().isBlank()) {
+            throw new InvalidS3ObjectEventException("S3 object event bucket must be a non-blank string");
+        }
+        if (path == null || !path.isTextual()) {
+            throw new InvalidS3ObjectEventException("S3 object event path must be a string");
+        }
+        if (objects == null || !objects.isArray()) {
+            throw new InvalidS3ObjectEventException("S3 object event objects must be an array");
+        }
+        for (JsonNode object : objects) {
+            if (!object.isTextual() || object.textValue().isBlank()) {
+                throw new InvalidS3ObjectEventException("S3 object event objects must contain non-blank strings");
+            }
+        }
+
+        S3ObjectEvent event = objectMapper.treeToValue(root, S3ObjectEvent.class);
+        event.validate();
+        return event;
+    }
+
+    private static boolean isUuid(String value) {
+        try {
+            java.util.UUID.fromString(value);
+            return true;
+        } catch (IllegalArgumentException exception) {
+            return false;
+        }
+    }
+
+    private static boolean isInstant(String value) {
+        try {
+            Instant.parse(value);
+            return true;
+        } catch (java.time.format.DateTimeParseException exception) {
+            return false;
         }
     }
 }
