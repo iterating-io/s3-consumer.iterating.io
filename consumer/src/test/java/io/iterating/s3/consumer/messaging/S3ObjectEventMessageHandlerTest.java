@@ -30,8 +30,14 @@ class S3ObjectEventMessageHandlerTest {
                 {"commandId":"1d47b09b-67d1-438c-a86e-8d1f611ac080","requestedAt":"2026-08-23T12:00:00Z","sourceEvent":"blog.draft.updated","draftId":26,"bucket":"dev.blog.iterating.io","path":"public/draft/26/","objects":["first.png","second.png"]}
                 """.getBytes(), "s3.objects.reconcile");
 
-        verify(reconciliationService).backup("dev.blog.iterating.io", "public/draft/26/first.png");
-        verify(reconciliationService).backup("dev.blog.iterating.io", "public/draft/26/second.png");
+        verify(reconciliationService).reconcile(
+                "dev.blog.iterating.io",
+                "public/draft/26/",
+                java.util.Set.of("public/draft/26/first.png", "public/draft/26/second.png"));
+        verify(reconciliationService).restoreIfMissing(
+                "dev.blog.iterating.io", "public/draft/26/first.png");
+        verify(reconciliationService).restoreIfMissing(
+                "dev.blog.iterating.io", "public/draft/26/second.png");
         verifyNoMoreInteractions(reconciliationService);
         ArgumentCaptor<S3ObjectsReconciled> result = ArgumentCaptor.forClass(S3ObjectsReconciled.class);
         verify(reconciledPublisher).publish(result.capture());
@@ -41,6 +47,30 @@ class S3ObjectEventMessageHandlerTest {
                 .isEqualTo(new S3ObjectsReconciled(
                         "1d47b09b-67d1-438c-a86e-8d1f611ac080", Instant.EPOCH, 26,
                         "dev.blog.iterating.io", "public/draft/26/", List.of("first.png", "second.png")));
+    }
+
+    @Test
+    void publishesCompletionWhenSourceObjectWasAlreadyMissing() throws Exception {
+        handler.handle("""
+                {"commandId":"0c7eded4-079b-491e-99b9-28e3f25f0469","requestedAt":"2026-08-29T23:42:38.613643650Z","sourceEvent":"blog.draft.updated","draftId":30,"bucket":"dev.blog.iterating.io","path":"public/draft/30/","objects":["missing.png"]}
+                """.getBytes(), "s3.objects.reconcile");
+
+        ArgumentCaptor<S3ObjectsReconciled> completion = ArgumentCaptor.forClass(S3ObjectsReconciled.class);
+        verify(reconciledPublisher).publish(completion.capture());
+        org.assertj.core.api.Assertions.assertThat(completion.getValue().commandId())
+                .isEqualTo("0c7eded4-079b-491e-99b9-28e3f25f0469");
+        org.assertj.core.api.Assertions.assertThat(completion.getValue().objects())
+                .containsExactly("missing.png");
+    }
+
+    @Test
+    void reconcilesEntirePrefixWhenKeepListIsEmpty() throws Exception {
+        handler.handle("""
+                {"commandId":"49aff39b-9486-4486-b5b1-5bd4d646b988","requestedAt":"2026-08-31T12:41:33.121765898Z","sourceEvent":"blog.draft.created","draftId":31,"bucket":"dev.blog.iterating.io","path":"public/draft/31/","objects":[]}
+                """.getBytes(), "s3.objects.reconcile");
+
+        verify(reconciliationService).reconcile(
+                "dev.blog.iterating.io", "public/draft/31/", java.util.Set.of());
     }
 
     @Test

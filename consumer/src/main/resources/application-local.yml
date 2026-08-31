@@ -12,21 +12,21 @@ management:
             enabled: true
 
 nats:
-    servers: ${NATS_SERVERS:nats://nats.iterating.io:34222}
-    connection-name: ${NATS_CONNECTION_NAME:s3-reconcile-connection}
-    credentials-path: ${NATS_CREDENTIALS_PATH:}
-    stream: ${NATS_STREAM:S3_EVENTS}
-    durable: ${NATS_DURABLE:s3-reconcile}
-    filter-subject: ${NATS_FILTER_SUBJECT:s3.objects.reconcile}
-    batch-size: ${NATS_BATCH_SIZE:10}
-    fetch-timeout: ${NATS_FETCH_TIMEOUT:5s}
-    idle-delay: ${NATS_IDLE_DELAY:5s}
+    servers: ${NATS_SERVERS}
+    connection-name: ${NATS_CONNECTION_NAME}
+    credentials-path: ${NATS_CREDENTIALS_PATH}
+    stream: ${NATS_STREAM}
+    durable: ${NATS_DURABLE}
+    filter-subject: ${NATS_FILTER_SUBJECT}
+    batch-size: ${NATS_BATCH_SIZE}
+    fetch-timeout: ${NATS_FETCH_TIMEOUT}
+    idle-delay: ${NATS_IDLE_DELAY}
 
 s3:
-    backup-bucket: ${S3_BACKUP_BUCKET:}
-    region: ${AWS_REGION:us-east-1}
-    endpoint-override: ${AWS_ENDPOINT_URL:}
+    backup-bucket: ${S3_BACKUP_BUCKET}
+    region: ${AWS_REGION}
+    endpoint-override: ${AWS_ENDPOINT_URL}
 
 aws:
-    access-key: ${AWS_ACCESS_KEY_ID:}
-    secret-key: ${AWS_SECRET_ACCESS_KEY:}
+    access-key: ${AWS_ACCESS_KEY_ID}
+    secret-key: ${AWS_SECRET_ACCESS_KEY}

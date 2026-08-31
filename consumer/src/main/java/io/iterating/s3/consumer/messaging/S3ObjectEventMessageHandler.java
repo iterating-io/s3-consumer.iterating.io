@@ -2,6 +2,8 @@ package io.iterating.s3.consumer.messaging;
 
 import java.util.Iterator;
 import java.util.List;
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.Set;
 import java.time.Instant;
 
@@ -44,16 +46,70 @@ public class S3ObjectEventMessageHandler implements MessageHandler {
         try {
             S3ObjectEvent event = parsePayload(payload);
             List<String> keys = event.keys();
+            Set<String> keepKeys = new HashSet<>(keys);
 
-            log.info("S3 objects reconcile requested subject={} sourceBucket={} path={} objectCount={}",
-                    subject, event.bucket(), event.path(), keys.size());
-            for (String key : keys) {
-                reconciliationService.backup(event.bucket(), key);
+            log.info("S3 objects reconcile requested commandId={} subject={} sourceBucket={} path={} objectCount={}",
+                    event.commandId(), subject, event.bucket(), event.path(), keys.size());
+            log.info("S3 prefix reconciliation starting commandId={} source=s3://{}/{} keepObjectCount={}",
+                    event.commandId(), event.bucket(), event.path(), keepKeys.size());
+            try {
+                reconciliationService.reconcile(event.bucket(), event.path(), keepKeys);
+            } catch (Exception exception) {
+                log.error(
+                        "S3 prefix reconciliation failed commandId={} subject={} stage=BACKUP_UNREFERENCED source=s3://{}/{} exceptionType={} message={}",
+                        event.commandId(), subject, event.bucket(), event.path(),
+                        exception.getClass().getSimpleName(), exception.getMessage());
+                throw exception;
             }
-            reconciledPublisher.publish(new S3ObjectsReconciled(
-                    event.commandId(), Instant.now(), event.draftId(), event.bucket(), event.path(), event.objects()));
-            log.info("S3 objects reconciled subject={} sourceBucket={} path={} objectCount={}",
-                    subject, event.bucket(), event.path(), keys.size());
+            log.info("S3 prefix reconciliation finished commandId={} source=s3://{}/{}",
+                    event.commandId(), event.bucket(), event.path());
+
+            List<Exception> restoreFailures = new ArrayList<>();
+            for (String key : keys) {
+                log.info("S3 referenced object check starting commandId={} source=s3://{}/{}",
+                        event.commandId(), event.bucket(), key);
+                try {
+                    reconciliationService.restoreIfMissing(event.bucket(), key);
+                } catch (Exception exception) {
+                    restoreFailures.add(exception);
+                    log.error(
+                            "S3 referenced object check failed; continuing commandId={} subject={} stage=KEEP_OR_RESTORE source=s3://{}/{} exceptionType={} message={}",
+                            event.commandId(),
+                            subject,
+                            event.bucket(),
+                            key,
+                            exception.getClass().getSimpleName(),
+                            exception.getMessage());
+                    continue;
+                }
+                log.info("S3 referenced object check finished commandId={} source=s3://{}/{}",
+                        event.commandId(), event.bucket(), key);
+            }
+            if (!restoreFailures.isEmpty()) {
+                io.iterating.s3.consumer.service.S3ReconciliationException aggregate =
+                        new io.iterating.s3.consumer.service.S3ReconciliationException(
+                                "Failed to keep or restore " + restoreFailures.size()
+                                        + " referenced object(s) for commandId=" + event.commandId(),
+                                restoreFailures.getFirst());
+                restoreFailures.stream().skip(1).forEach(aggregate::addSuppressed);
+                throw aggregate;
+            }
+            log.info("Publishing S3ObjectsReconciled commandId={} subject={} objectCount={}",
+                    event.commandId(), NatsS3ObjectsReconciledPublisher.SUBJECT, event.objects().size());
+            try {
+                reconciledPublisher.publish(new S3ObjectsReconciled(
+                        event.commandId(), Instant.now(), event.draftId(), event.bucket(), event.path(), event.objects()));
+            } catch (Exception exception) {
+                log.error(
+                        "S3 reconciliation completion publish failed commandId={} stage=PUBLISH_COMPLETION subject={} exceptionType={} message={}",
+                        event.commandId(),
+                        NatsS3ObjectsReconciledPublisher.SUBJECT,
+                        exception.getClass().getSimpleName(),
+                        exception.getMessage());
+                throw exception;
+            }
+            log.info("S3 objects reconciled commandId={} subject={} sourceBucket={} path={} objectCount={}",
+                    event.commandId(), subject, event.bucket(), event.path(), keys.size());
         } catch (JsonProcessingException | InvalidS3ObjectEventException exception) {
             throw new InvalidMessageException("Invalid S3 object event", exception);
         } catch (java.io.IOException exception) {

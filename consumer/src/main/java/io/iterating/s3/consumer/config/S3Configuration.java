@@ -8,6 +8,9 @@ import org.springframework.context.annotation.Configuration;
 import software.amazon.awssdk.auth.credentials.AwsCredentials;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.AwsSessionCredentials;
+import software.amazon.awssdk.core.interceptor.Context;
+import software.amazon.awssdk.core.interceptor.ExecutionAttributes;
+import software.amazon.awssdk.core.interceptor.ExecutionInterceptor;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.sts.StsClient;
@@ -27,11 +30,19 @@ public class S3Configuration {
         // like <bucket>.<endpoint-host> which often do not exist for private endpoints.
         properties.endpointOverrideUri().ifPresent(uri -> {
             builder.endpointOverride(uri);
-            var svcCfg = software.amazon.awssdk.services.s3.S3Configuration.builder()
-                    .pathStyleAccessEnabled(true)
-                    .build();
-            builder.serviceConfiguration(svcCfg);
+            builder.forcePathStyle(true);
         });
+
+        builder.overrideConfiguration(configuration -> configuration.addExecutionInterceptor(new ExecutionInterceptor() {
+            @Override
+            public void beforeTransmission(Context.BeforeTransmission context, ExecutionAttributes executionAttributes) {
+                log.info("S3 HTTP request operation={} method={} uri={} host={}",
+                        context.request().getClass().getSimpleName(),
+                        context.httpRequest().method(),
+                        context.httpRequest().getUri(),
+                        context.httpRequest().host());
+            }
+        }));
 
         builder.credentialsProvider(credentialsProvider);
 
