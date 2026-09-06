@@ -1,9 +1,35 @@
+# Version control
 .git
 .gitignore
+
+# Gradle and build output
 .gradle
 **/build
 **/out
-**/.idea
-**/.vscode
-**/.DS_Store
-.github/sessions
+**/bin
+**/test-results
+**/reports
+
+# IDE files
+.idea
+.vscode
+**/*.iml
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# CI, planning, and documentation
+.github
+.planning
+README.md
+*.md
+
+# Local configuration and secrets
+.env
+.env.*
+*.env
+*.env.local
+*.creds

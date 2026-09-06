@@ -31,13 +31,9 @@ Set required environment variables before running.
 Build the consumer image from the repository root:
 
 ```bash
-docker build -f consumer/Dockerfile -t ghcr.io/<your-org>/s3-iterating-consumer:consumer-latest .
+docker build -f dockerfile.consumer -t ghcr.io/iterating-io/s3.iterating.io/consumer:local .
 ```
 
-Push the resulting image after logging in to your registry:
-
-```bash
-docker push ghcr.io/<your-org>/s3-iterating-consumer:consumer-latest
-```
-
-The image defaults to `SPRING_PROFILES_ACTIVE=prod`, so production configuration must come from environment variables or external config at runtime.
+Set `SPRING_PROFILES_ACTIVE=prod` and provide production configuration through
+environment variables or external configuration at runtime. The image is
+published to GHCR by the manual `Build and publish ARM64 image` workflow.
