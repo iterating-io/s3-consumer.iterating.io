@@ -6,7 +6,8 @@ import java.util.Set;
 import java.util.UUID;
 
 public record S3ObjectEvent(
-        String commandId,
+        String eventId,
+        String sourceEventId,
         Instant requestedAt,
         String sourceEvent,
         long draftId,
@@ -18,13 +19,21 @@ public record S3ObjectEvent(
             "blog.draft.created", "blog.draft.updated", "blog.draft.deleted");
 
     public void validate() {
-        if (commandId == null) {
-            throw new InvalidS3ObjectEventException("S3 object event commandId is required");
+        if (eventId == null) {
+            throw new InvalidS3ObjectEventException("S3 object event eventId is required");
         }
         try {
-            UUID.fromString(commandId);
+            UUID.fromString(eventId);
         } catch (IllegalArgumentException exception) {
-            throw new InvalidS3ObjectEventException("S3 object event commandId must be a UUID");
+            throw new InvalidS3ObjectEventException("S3 object event eventId must be a UUID");
+        }
+        if (sourceEventId == null) {
+            throw new InvalidS3ObjectEventException("S3 object event sourceEventId is required");
+        }
+        try {
+            UUID.fromString(sourceEventId);
+        } catch (IllegalArgumentException exception) {
+            throw new InvalidS3ObjectEventException("S3 object event sourceEventId must be a UUID");
         }
         if (requestedAt == null) {
             throw new InvalidS3ObjectEventException("S3 object event requestedAt is required");

@@ -10,12 +10,13 @@ import org.junit.jupiter.api.Test;
 
 class S3ObjectEventTest {
 
-    private static final String COMMAND_ID = "1d47b09b-67d1-438c-a86e-8d1f611ac080";
+    private static final String EVENT_ID = "1d47b09b-67d1-438c-a86e-8d1f611ac080";
+    private static final String SOURCE_EVENT_ID = "a4f3c2d1-7b68-4e90-9abc-1234567890ab";
     private static final Instant REQUESTED_AT = Instant.parse("2026-08-23T12:00:00Z");
 
     private S3ObjectEvent event(String bucket, String path, List<String> objects) {
         return new S3ObjectEvent(
-                COMMAND_ID, REQUESTED_AT, "blog.draft.updated", 26, bucket, path, objects);
+                EVENT_ID, SOURCE_EVENT_ID, REQUESTED_AT, "blog.draft.updated", 26, bucket, path, objects);
     }
 
     @Test

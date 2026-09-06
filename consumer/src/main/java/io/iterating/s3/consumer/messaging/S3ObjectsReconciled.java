@@ -4,7 +4,8 @@ import java.time.Instant;
 import java.util.List;
 
 public record S3ObjectsReconciled(
-        String commandId,
+        String eventId,
+        String sourceEventId,
         Instant completedAt,
         long draftId,
         String bucket,
