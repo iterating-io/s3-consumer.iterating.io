@@ -17,7 +17,8 @@ The consumer expects JSON payloads like this:
 
 ```json
 {
-    "commandId": "1d47b09b-67d1-438c-a86e-8d1f611ac080",
+    "eventId": "1d47b09b-67d1-438c-a86e-8d1f611ac080",
+    "sourceEventId": "a4f3c2d1-7b68-4e90-9abc-1234567890ab",
     "requestedAt": "2026-08-23T12:00:00Z",
     "sourceEvent": "blog.draft.updated",
     "draftId": 26,
@@ -27,8 +28,8 @@ The consumer expects JSON payloads like this:
 }
 ```
 
-- `commandId`, `requestedAt`, `sourceEvent`, `draftId`, `bucket`, `path`, and `objects` are required.
-- After successful reconciliation, the consumer publishes a matching completion message to `s3.objects.reconciled`.
+- `eventId`, `sourceEventId`, `requestedAt`, `sourceEvent`, `draftId`, `bucket`, `path`, and `objects` are required.
+- After successful reconciliation, the consumer publishes a matching completion message to `s3.objects.reconciled`. The completion gets its own deterministic `eventId` and uses the input `eventId` as its `sourceEventId`.
 - `path` is a common prefix and must end in `/` when non-empty.
 - `objects` contains the object filenames relative to `path`; only the specified objects are backed up and deleted.
 - Unknown JSON fields and blank object names are rejected to match the AsyncAPI schema.
