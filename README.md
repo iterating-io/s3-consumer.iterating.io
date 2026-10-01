@@ -28,11 +28,26 @@ The consumer expects JSON payloads like this:
 }
 ```
 
-- `eventId`, `sourceEventId`, `requestedAt`, `sourceEvent`, `draftId`, `bucket`, `path`, and `objects` are required.
-- After successful reconciliation, the consumer publishes a matching completion message to `s3.objects.reconciled`. The completion gets its own deterministic `eventId` and uses the input `eventId` as its `sourceEventId`.
-- `path` is a common prefix and must end in `/` when non-empty.
-- `objects` contains the object filenames relative to `path`; only the specified objects are backed up and deleted.
-- Unknown JSON fields and blank object names are rejected to match the AsyncAPI schema.
+Copy expiry payloads target a share prefix and include no object names:
+
+```json
+{
+    "eventId": "5a5d5b3e-8e47-4ef0-a6bd-51ef3062efb5",
+    "sourceEventId": "a4f3c2d1-7b68-4e90-9abc-1234567890ab",
+    "requestedAt": "2026-08-23T12:00:00Z",
+    "sourceEvent": "share.copy.expired",
+    "shareId": "f5b8ed5e-390d-4df3-88cb-810ac47f20db",
+    "bucket": "source-bucket",
+    "path": "share/f5b8ed5e-390d-4df3-88cb-810ac47f20db/",
+    "objects": []
+}
+```
+
+- Common required fields are UUID strings `eventId` and `sourceEventId`, an ISO-8601 `requestedAt`, non-blank `bucket`, string `path`, and an `objects` array of non-blank strings. `sourceEvent` is optional and descriptive; the consumer does not restrict its value. Unknown JSON fields are rejected.
+- Blog reconciliation requires a positive integer `draftId` and omits `shareId`.
+- Copy expiry targets `path` `share/<canonical-lowercase-UUID>/`, omits `draftId`, and supplies an empty `objects` array. `shareId` is optional; when present it must match the UUID in the path.
+- After successful reconciliation, the consumer publishes to `s3.objects.reconciled`. Completion has a deterministic `eventId`, uses the input `eventId` as `sourceEventId`, and repeats `bucket`, `path`, and `objects`. Share completions include the path UUID as `shareId` and omit `draftId`; blog completions include `draftId` and omit `shareId`.
+- `path` is a common prefix and must end in `/` when non-empty. `objects` contains filenames relative to `path`; only specified objects are backed up and deleted.
 
 ## Configuration
 

@@ -1,0 +1,14 @@
+version: 1
+title: S3 Iterating Consumer Documentation
+sections:
+  - id: message-contract
+    kind: plaintext
+    title: S3 reconciliation message contract
+    purpose: Describes accepted reconciliation messages and their completion events.
+    terms: [NATS, payload, copy expiry, share]
+    source: content/message-contract.json
+    page: index.html
+    code:
+      - ../consumer/src/main/java/io/iterating/s3/consumer/messaging/S3ObjectEvent.java
+      - ../consumer/src/main/java/io/iterating/s3/consumer/messaging/S3ObjectEventMessageHandler.java
+      - ../consumer/src/main/java/io/iterating/s3/consumer/messaging/S3ObjectsReconciled.java

@@ -1,0 +1,46 @@
+{
+  "blocks": [
+    {
+      "type": "paragraph",
+      "text": "Send a reconciliation message to s3.objects.reconcile to back up and remove selected source objects. A copy expiry message targets one share prefix and carries no object names, so the worker processes expiry for that share without identifying individual files."
+    },
+    {
+      "type": "heading",
+      "text": "Common fields"
+    },
+    {
+      "type": "paragraph",
+      "text": "Every payload is a JSON object with UUID strings eventId and sourceEventId, an ISO-8601 requestedAt string, a non-blank bucket, a string path, and an objects array of non-blank strings. Unknown fields are rejected. sourceEvent is accepted as an optional descriptive value; its value is not restricted by the consumer."
+    },
+    {
+      "type": "paragraph",
+      "text": "For ordinary blog reconciliation, include a positive integer draftId and omit shareId. For share copy expiry, use path share/<canonical-lowercase-UUID>/, omit draftId, and provide an empty objects array. shareId is optional; if included, it must be a UUID matching the UUID in path."
+    },
+    {
+      "type": "heading",
+      "text": "Examples"
+    },
+    {
+      "type": "code",
+      "language": "json",
+      "text": "{\n  \"eventId\": \"1d47b09b-67d1-438c-a86e-8d1f611ac080\",\n  \"sourceEventId\": \"a4f3c2d1-7b68-4e90-9abc-1234567890ab\",\n  \"requestedAt\": \"2026-08-23T12:00:00Z\",\n  \"sourceEvent\": \"blog.draft.updated\",\n  \"draftId\": 26,\n  \"bucket\": \"source-bucket\",\n  \"path\": \"public/draft/21/\",\n  \"objects\": [\"first.png\", \"second.png\"]\n}"
+    },
+    {
+      "type": "code",
+      "language": "json",
+      "text": "{\n  \"eventId\": \"5a5d5b3e-8e47-4ef0-a6bd-51ef3062efb5\",\n  \"sourceEventId\": \"a4f3c2d1-7b68-4e90-9abc-1234567890ab\",\n  \"requestedAt\": \"2026-08-23T12:00:00Z\",\n  \"sourceEvent\": \"share.copy.expired\",\n  \"shareId\": \"f5b8ed5e-390d-4df3-88cb-810ac47f20db\",\n  \"bucket\": \"source-bucket\",\n  \"path\": \"share/f5b8ed5e-390d-4df3-88cb-810ac47f20db/\",\n  \"objects\": []\n}"
+    },
+    {
+      "type": "heading",
+      "text": "Completion"
+    },
+    {
+      "type": "paragraph",
+      "text": "After successful reconciliation, the consumer publishes to s3.objects.reconciled. The completion has a deterministic eventId derived from the request eventId and uses that request eventId as sourceEventId. It repeats bucket, path, and objects. For a share path, it includes the UUID from the path as shareId and omits draftId; ordinary blog completions include draftId and omit shareId."
+    },
+    {
+      "type": "paragraph",
+      "text": "For non-empty paths, path must end in /. The objects array contains filenames relative to path; only the specified objects are reconciled. Blank object names and unknown JSON fields are rejected."
+    }
+  ]
+}

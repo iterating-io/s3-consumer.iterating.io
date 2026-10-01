@@ -28,10 +28,7 @@ public class S3ObjectEventMessageHandler implements MessageHandler {
 
     private static final Logger log = LoggerFactory.getLogger(S3ObjectEventMessageHandler.class);
     private static final Set<String> PAYLOAD_FIELDS = Set.of(
-            "eventId", "sourceEventId", "requestedAt", "sourceEvent", "draftId", "bucket", "path", "objects");
-    private static final Set<String> SOURCE_EVENTS = Set.of(
-            "blog.draft.created", "blog.draft.updated", "blog.draft.deleted");
-
+            "eventId", "sourceEventId", "requestedAt", "sourceEvent", "draftId", "shareId", "bucket", "path", "objects");
     private final ObjectMapper objectMapper;
     private final S3ReconciliationService reconciliationService;
     private final S3ObjectsReconciledPublisher reconciledPublisher;
@@ -103,7 +100,8 @@ public class S3ObjectEventMessageHandler implements MessageHandler {
             try {
                 reconciledPublisher.publish(new S3ObjectsReconciled(
                         uuidV5(event.eventId(), NatsS3ObjectsReconciledPublisher.SUBJECT),
-                        event.eventId(), Instant.now(), event.draftId(), event.bucket(), event.path(), event.objects()));
+                        event.eventId(), Instant.now(), event.draftId(), event.effectiveShareId(),
+                        event.bucket(), event.path(), event.objects()));
             } catch (Exception exception) {
                 log.error(
                         "S3 reconciliation completion publish failed sourceEventId={} stage=PUBLISH_COMPLETION subject={} exceptionType={} message={}",
@@ -156,6 +154,7 @@ public class S3ObjectEventMessageHandler implements MessageHandler {
         JsonNode requestedAt = root.get("requestedAt");
         JsonNode sourceEvent = root.get("sourceEvent");
         JsonNode draftId = root.get("draftId");
+        JsonNode shareId = root.get("shareId");
         JsonNode bucket = root.get("bucket");
         JsonNode path = root.get("path");
         JsonNode objects = root.get("objects");
@@ -168,11 +167,13 @@ public class S3ObjectEventMessageHandler implements MessageHandler {
         if (requestedAt == null || !requestedAt.isTextual() || !isInstant(requestedAt.textValue())) {
             throw new InvalidS3ObjectEventException("S3 object event requestedAt must be a date-time string");
         }
-        if (sourceEvent == null || !sourceEvent.isTextual() || !SOURCE_EVENTS.contains(sourceEvent.textValue())) {
-            throw new InvalidS3ObjectEventException("S3 object event sourceEvent is invalid");
-        }
-        if (draftId == null || !draftId.isIntegralNumber() || draftId.longValue() < 1) {
-            throw new InvalidS3ObjectEventException("S3 object event draftId must be a positive integer");
+        boolean sharePath = path != null && path.isTextual() && path.textValue().startsWith("share/");
+        if (sharePath) {
+            if (draftId != null || (shareId != null && (!shareId.isTextual() || !isUuid(shareId.textValue())))) {
+                throw new InvalidS3ObjectEventException("copy expiry must not include draftId and shareId must be a UUID when present");
+            }
+        } else if (shareId != null || draftId == null || !draftId.isIntegralNumber() || draftId.longValue() < 1) {
+            throw new InvalidS3ObjectEventException("blog event requires a positive draftId and no shareId");
         }
         if (bucket == null || !bucket.isTextual() || bucket.textValue().isBlank()) {
             throw new InvalidS3ObjectEventException("S3 object event bucket must be a non-blank string");
