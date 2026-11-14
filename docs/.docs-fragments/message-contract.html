@@ -29,5 +29,5 @@
 <h3>Completion</h3>
 <p>After successful reconciliation, the consumer publishes to s3.objects.reconciled. The completion has a deterministic eventId derived from the request eventId and uses that request eventId as sourceEventId. It repeats bucket, path, and objects. For a share path, it includes the UUID from the path as shareId and omits draftId; ordinary blog completions include draftId and omit shareId.</p>
 <p>For non-empty paths, path must end in /. The objects array contains filenames relative to path; only the specified objects are reconciled. Blank object names and unknown JSON fields are rejected.</p>
-
+  
 </section>

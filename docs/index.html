@@ -12,7 +12,8 @@
   <a class="doc-skip-link" href="#main-content" data-doc-label="skip">Skip to content</a>
   <aside class="doc-sidebar" aria-label="Document navigation">
     <a class="doc-sidebar-title" href="index.html">S3 Consumer Documentation</a>
-    <nav class="doc-nav" aria-label="Contents"><a href="index.html#message-contract">S3 reconciliation message contract</a></nav>
+    <nav class="doc-nav" aria-label="Contents"><a href="index.html#message-contract">S3 reconciliation message contract</a>
+<a href="contracts.html#s3-asyncapi-contract">S3 reconciliation AsyncAPI contract</a></nav>
   </aside>
   <main class="doc-main" id="main-content" tabindex="-1">
     <header class="doc-header">
@@ -49,7 +50,7 @@
 <h3>Completion</h3>
 <p>After successful reconciliation, the consumer publishes to s3.objects.reconciled. The completion has a deterministic eventId derived from the request eventId and uses that request eventId as sourceEventId. It repeats bucket, path, and objects. For a share path, it includes the UUID from the path as shareId and omits draftId; ordinary blog completions include draftId and omit shareId.</p>
 <p>For non-empty paths, path must end in /. The objects array contains filenames relative to path; only the specified objects are reconciled. Blank object names and unknown JSON fields are rejected.</p>
-
+  
 </section>
 
   </main>

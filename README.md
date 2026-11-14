@@ -13,6 +13,8 @@ Java 25 worker service that consumes NATS JetStream messages and reconciles S3 o
 
 ## Message Contract
 
+The [S3 AsyncAPI contract](docs/contracts/s3-events.yaml) defines the reconciliation command consumed on `s3.objects.reconcile` and the completion event published on `s3.objects.reconciled`.
+
 The consumer expects JSON payloads like this:
 
 ```json
@@ -57,8 +59,8 @@ Runtime configuration is bound from environment variables through `consumer/src/
 | ----------------------- | ----------------------- | ----------------------------------------------------------------------------------------------------------------- |
 | `NATS_SERVERS`          | `nats://localhost:4222` | Comma-separated NATS server URLs                                                                                  |
 | `NATS_CREDENTIALS_PATH` | empty                   | Path to NATS `.creds` file or inline credentials content. Multiline values and escaped `\n` values are supported. |
-| `NATS_STREAM`           | `S3_EVENTS`             | JetStream stream name                                                                                             |
-| `NATS_DURABLE`          | `s3-isolator`           | Durable consumer name                                                                                             |
+| `NATS_STREAM`           | `S3_INBOX`              | JetStream stream name                                                                                             |
+| `NATS_DURABLE`          | `s3-reconcile`           | Durable consumer name                                                                                             |
 | `NATS_FILTER_SUBJECT`   | `s3.objects.reconcile`  | Subject/filter to consume                                                                                         |
 | `NATS_BATCH_SIZE`       | `10`                    | Pull batch size                                                                                                   |
 | `S3_BACKUP_BUCKET`      | empty                   | Required backup bucket; backups are stored as `<backup-bucket>/<source-bucket>/<original/path>`                   |
@@ -72,7 +74,7 @@ Runtime configuration is bound from environment variables through `consumer/src/
 
 ## Run locally
 
-Copy the local-only environment template, set the NATS credentials path and backup bucket, then run the worker. `.envrc` supplies the non-sensitive AsyncAPI defaults, including the `S3_EVENTS` stream and `s3.objects.reconcile` subject.
+Copy the local-only environment template, set the NATS credentials path and backup bucket, then run the worker. `.envrc` supplies the non-sensitive AsyncAPI defaults, including the `S3_INBOX` stream and `s3.objects.reconcile` subject.
 
 ```bash
 cp .env.example .env

@@ -12,3 +12,11 @@ sections:
       - ../consumer/src/main/java/io/iterating/s3/consumer/messaging/S3ObjectEvent.java
       - ../consumer/src/main/java/io/iterating/s3/consumer/messaging/S3ObjectEventMessageHandler.java
       - ../consumer/src/main/java/io/iterating/s3/consumer/messaging/S3ObjectsReconciled.java
+  - id: s3-asyncapi-contract
+    kind: asyncapi
+    title: S3 reconciliation AsyncAPI contract
+    purpose: Defines the JetStream reconciliation command and completion event owned by this service.
+    terms: [NATS, JetStream, reconciliation, completion]
+    source: contracts/s3-events.yaml
+    page: contracts.html
+    related: [message-contract]

@@ -1,0 +1,244 @@
+asyncapi: 3.1.0
+id: urn:iterating:s3-object-reconciler
+info:
+  title: S3 object reconciliation API
+  version: 1.0.0
+  description: Commands accepted by the S3 worker and completion events it publishes.
+
+defaultContentType: application/json
+
+servers:
+  nats:
+    host: nats.nats-iterating-io.svc.cluster.local:4222
+    protocol: nats
+    description: NATS JetStream endpoint configured for the S3 service account.
+    x-nats-account: s3
+
+channels:
+  S3ObjectsReconcile:
+    address: s3.objects.reconcile
+    description: Reconcile the objects under a prefix while keeping the listed object names.
+    x-source:
+      account: eventpipe
+      stream: EVENTPIPE_COMMANDS
+      filterSubject: s3.objects.reconcile
+    x-jetstream:
+      stream: S3_INBOX
+    messages:
+      S3ObjectsReconcile:
+        $ref: '#/components/messages/S3ObjectsReconcile'
+
+  S3ObjectsReconciled:
+    address: s3.objects.reconciled
+    description: Confirms that the requested prefix reconciliation completed.
+    x-jetstream:
+      stream: S3_EVENTS
+    messages:
+      S3ObjectsReconciled:
+        $ref: '#/components/messages/S3ObjectsReconciled'
+
+operations:
+  receiveS3ObjectsReconcile:
+    action: receive
+    x-jetstream-consumer:
+      name: s3-reconcile
+      mode: pull
+      durable: true
+      filterSubject: s3.objects.reconcile
+      ackPolicy: explicit
+    channel:
+      $ref: '#/channels/S3ObjectsReconcile'
+    messages:
+      - $ref: '#/channels/S3ObjectsReconcile/messages/S3ObjectsReconcile'
+    summary: Receive a reconciliation command and acknowledge it after processing succeeds.
+
+  sendS3ObjectsReconciled:
+    action: send
+    channel:
+      $ref: '#/channels/S3ObjectsReconciled'
+    messages:
+      - $ref: '#/channels/S3ObjectsReconciled/messages/S3ObjectsReconciled'
+    summary: Publish a completion event after reconciliation succeeds.
+
+components:
+  messages:
+    S3ObjectsReconcile:
+      name: S3ObjectsReconcile
+      title: S3 objects reconcile
+      summary: Identifies an object prefix and the object names to keep.
+      payload:
+        $ref: '#/components/schemas/S3ObjectsReconcilePayload'
+      examples:
+        - name: reconcileBlogDraftImages
+          payload:
+            eventId: 8b9a4604-1d48-5eb2-8e17-5cfdb6704c1b
+            sourceEventId: a4f3c2d1-7b68-4e90-9abc-1234567890ab
+            requestedAt: '2026-08-23T12:00:00Z'
+            sourceEvent: blog.draft.updated
+            draftId: 26
+            bucket: dev.blog.iterating.io
+            path: public/draft/26/
+            objects:
+              - 3b50f728-0d96-436e-ab42-033c00e3468d.png
+        - name: reconcileExpiredShareObjects
+          payload:
+            eventId: 9f041c1a-e2a4-5e33-bdcb-ffcdd8420705
+            sourceEventId: 0a5dd3a0-2465-30c3-8443-4d53eba48739
+            requestedAt: '2026-09-28T12:30:01Z'
+            sourceEvent: copy.objects.expired
+            shareId: 4a5d5f46-68a2-4bd8-932b-9a25fb050fea
+            bucket: dev.copy.iterating.io
+            path: share/4a5d5f46-68a2-4bd8-932b-9a25fb050fea/
+            objects: []
+
+    S3ObjectsReconciled:
+      name: S3ObjectsReconciled
+      title: S3 objects reconciled
+      summary: Confirms completion and repeats the reconciled object prefix and names.
+      payload:
+        $ref: '#/components/schemas/S3ObjectsReconciledPayload'
+      examples:
+        - name: blogDraftImagesReconciled
+          payload:
+            eventId: c025f8b7-0165-51a9-9cff-7c03695e4ec8
+            sourceEventId: 8b9a4604-1d48-5eb2-8e17-5cfdb6704c1b
+            completedAt: '2026-08-23T12:00:01Z'
+            draftId: 26
+            bucket: dev.blog.iterating.io
+            path: public/draft/26/
+            objects:
+              - 3b50f728-0d96-436e-ab42-033c00e3468d.png
+        - name: expiredShareObjectsReconciled
+          payload:
+            eventId: 332f689e-3cd7-5c59-ab12-c07ac1b358a6
+            sourceEventId: 9f041c1a-e2a4-5e33-bdcb-ffcdd8420705
+            completedAt: '2026-09-28T12:30:02Z'
+            shareId: 4a5d5f46-68a2-4bd8-932b-9a25fb050fea
+            bucket: dev.copy.iterating.io
+            path: share/4a5d5f46-68a2-4bd8-932b-9a25fb050fea/
+            objects: []
+
+  schemas:
+    S3ObjectsReconcilePayload:
+      type: object
+      additionalProperties: false
+      required:
+        - eventId
+        - sourceEventId
+        - requestedAt
+        - bucket
+        - path
+        - objects
+      properties:
+        eventId:
+          type: string
+          format: uuid
+          description: UUIDv5 with sourceEventId as the namespace and s3.objects.reconcile as the name.
+        sourceEventId:
+          type: string
+          format: uuid
+          description: Event ID of the source event that caused this command.
+        requestedAt:
+          type: string
+          format: date-time
+          description: Time at which eventpipe issued the command.
+        sourceEvent:
+          type: string
+          description: Optional descriptive subject of the source event.
+        draftId:
+          type: integer
+          minimum: 1
+          description: Required for blog draft events; omitted for share expiry events.
+        shareId:
+          type: string
+          format: uuid
+          description: Optional share UUID; when present it must match the UUID in path.
+        bucket:
+          type: string
+          minLength: 1
+          description: Source S3 bucket name.
+        path:
+          type: string
+          pattern: '^$|.*/$'
+          description: Object prefix. It may be empty; any non-empty value ends in a slash.
+        objects:
+          type: array
+          description: Names relative to path to keep; an empty list removes every object under path.
+          items:
+            type: string
+            minLength: 1
+      oneOf:
+        - required:
+            - draftId
+          not:
+            required:
+              - shareId
+          properties:
+            path:
+              not:
+                pattern: '^share/'
+        - properties:
+            path:
+              pattern: '^share/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/$'
+            objects:
+              maxItems: 0
+          not:
+            required:
+              - draftId
+
+    S3ObjectsReconciledPayload:
+      type: object
+      additionalProperties: false
+      required:
+        - eventId
+        - sourceEventId
+        - completedAt
+        - bucket
+        - path
+        - objects
+      properties:
+        eventId:
+          type: string
+          format: uuid
+          description: UUIDv5 with sourceEventId as the namespace and s3.objects.reconciled as the name.
+        sourceEventId:
+          type: string
+          format: uuid
+          description: Event ID of the s3.objects.reconcile command.
+        completedAt:
+          type: string
+          format: date-time
+          description: Time at which reconciliation completed.
+        draftId:
+          type: integer
+          minimum: 1
+          description: Blog draft ID; omitted for share expiry events.
+        shareId:
+          type: string
+          format: uuid
+          description: Share UUID; omitted for blog draft events.
+        bucket:
+          type: string
+          minLength: 1
+          description: Source S3 bucket name.
+        path:
+          type: string
+          pattern: '^$|.*/$'
+          description: Reconciled object prefix.
+        objects:
+          type: array
+          description: Reconciled object names relative to path.
+          items:
+            type: string
+            minLength: 1
+      oneOf:
+        - required:
+            - draftId
+          not:
+            required:
+              - shareId
+        - required:
+            - shareId
+          not:
+            required:
+              - draftId
