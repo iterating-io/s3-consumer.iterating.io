@@ -1,10 +1,10 @@
 {
   "version": 1,
   "generator": "26215d156955cf6e1c2bf171f0dd4f81c18737c88272bf6c8cd91fb12a0286d9",
-  "map": "f162523ccdb9f263d600e3c5b96faddd935abe52324c0b600dd61af7387fbcbc",
+  "map": "485995fd2d3540fd49ad5a5f296708ec13458dd49617554098d39aecc97c939a",
   "inputs": {
-    "content/message-contract.json": "c0ae58da085dbf752f3435c48e65b515dbc1d4a2343e7329bb0ccb9e6633fbf3",
-    "contracts/s3-events.yaml": "40323857576f050cf1266a7ab1c73413b217c09b0aa9147403f0840271ebbc75"
+    "../asyncapi/s3-events.yaml": "40323857576f050cf1266a7ab1c73413b217c09b0aa9147403f0840271ebbc75",
+    "content/message-contract.json": "c0ae58da085dbf752f3435c48e65b515dbc1d4a2343e7329bb0ccb9e6633fbf3"
   },
   "templates": {
     "page.html": "3d9a85e300196aad9e1299e3fb2c9fc47b801b934cf153c72b33b26aed520129",
@@ -13,14 +13,14 @@
   },
   "sections": {
     "message-contract": "5d190b02b329b931dea3649dc24925e9d56e04087e978c4fa3aa7cfa360a2b4b",
-    "s3-asyncapi-contract": "20946586e8597e58ecbda57fb9d57edbd9b1757a9460db605d05ca895f130183"
+    "s3-asyncapi-contract": "b61b6971a6d3c15172253edd8b8ea610eea7e529dfec759cdd859afd9e773ec3"
   },
   "outputs": {
     ".docs-fragments/message-contract.html": "cfa1e09d1df5f08d32a32472cc8b5bedcaa5199531d7f799d914e69d61aef981",
-    ".docs-fragments/s3-asyncapi-contract.html": "fda3a3356466b1352d1f95b51f153a1c418625f342d4a992134ed1f0544510d0",
+    ".docs-fragments/s3-asyncapi-contract.html": "ee4d7d4a3c31c66205f569e1194ed4355d32ede216579ead1e56e452dff9744f",
     "_assets/docs.css": "087f63aa79c6a6a3ae474a9816f6783113f8291a15e1aa55a074f0d14ca096f8",
     "_assets/docs.js": "d2fd337494af070ce98e8504bc65a9f2842618789c2a8f4653bd40d2b10658c0",
     "index.html": "707de9fdd27ded86031c90cbeea2f825d1926625d7a87f151957359f98e3369e",
-    "contracts.html": "392372d98448f641092119ff24033f5fb82607a445081694c7a90f6cab578437"
+    "contracts.html": "58dd1145c6eb9f32cc7112931115e9c42fa48832d320d11d08f3e9aeee0d7592"
   }
 }

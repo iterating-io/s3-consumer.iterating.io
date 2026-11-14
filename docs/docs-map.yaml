@@ -17,6 +17,6 @@ sections:
     title: S3 reconciliation AsyncAPI contract
     purpose: Defines the JetStream reconciliation command and completion event owned by this service.
     terms: [NATS, JetStream, reconciliation, completion]
-    source: contracts/s3-events.yaml
+    source: ../asyncapi/s3-events.yaml
     page: contracts.html
     related: [message-contract]

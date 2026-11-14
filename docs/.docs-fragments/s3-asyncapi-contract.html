@@ -1,7 +1,7 @@
 <section id="s3-asyncapi-contract" class="doc-section" data-kind="asyncapi" aria-labelledby="s3-asyncapi-contract-title">
   <h2 id="s3-asyncapi-contract-title">S3 reconciliation AsyncAPI contract</h2>
   <p class="doc-purpose">Defines the JetStream reconciliation command and completion event owned by this service.</p>
-  <div class="doc-contract"><p><a href="contracts/s3-events.yaml">원본 명세</a></p><pre class="doc-code"><code>asyncapi: 3.1.0
+  <div class="doc-contract"><p><a href="../asyncapi/s3-events.yaml">원본 명세</a></p><pre class="doc-code"><code>asyncapi: 3.1.0
 id: urn:iterating:s3-object-reconciler
 info:
   title: S3 object reconciliation API
@@ -242,7 +242,7 @@ components:
         not:
           required:
           - draftId
-</code></pre><details><summary>contracts/s3-events.yaml#/components/messages/S3ObjectsReconcile</summary><pre class="doc-code"><code>name: S3ObjectsReconcile
+</code></pre><details><summary>../asyncapi/s3-events.yaml#/components/messages/S3ObjectsReconcile</summary><pre class="doc-code"><code>name: S3ObjectsReconcile
 title: S3 objects reconcile
 summary: Identifies an object prefix and the object names to keep.
 payload:
@@ -269,7 +269,7 @@ examples:
     bucket: dev.copy.iterating.io
     path: share/4a5d5f46-68a2-4bd8-932b-9a25fb050fea/
     objects: []
-</code></pre></details><details><summary>contracts/s3-events.yaml#/components/schemas/S3ObjectsReconcilePayload</summary><pre class="doc-code"><code>type: object
+</code></pre></details><details><summary>../asyncapi/s3-events.yaml#/components/schemas/S3ObjectsReconcilePayload</summary><pre class="doc-code"><code>type: object
 additionalProperties: false
 required:
 - eventId
@@ -336,7 +336,7 @@ oneOf:
   not:
     required:
     - draftId
-</code></pre></details><details><summary>contracts/s3-events.yaml#/components/messages/S3ObjectsReconciled</summary><pre class="doc-code"><code>name: S3ObjectsReconciled
+</code></pre></details><details><summary>../asyncapi/s3-events.yaml#/components/messages/S3ObjectsReconciled</summary><pre class="doc-code"><code>name: S3ObjectsReconciled
 title: S3 objects reconciled
 summary: Confirms completion and repeats the reconciled object prefix and names.
 payload:
@@ -361,7 +361,7 @@ examples:
     bucket: dev.copy.iterating.io
     path: share/4a5d5f46-68a2-4bd8-932b-9a25fb050fea/
     objects: []
-</code></pre></details><details><summary>contracts/s3-events.yaml#/components/schemas/S3ObjectsReconciledPayload</summary><pre class="doc-code"><code>type: object
+</code></pre></details><details><summary>../asyncapi/s3-events.yaml#/components/schemas/S3ObjectsReconciledPayload</summary><pre class="doc-code"><code>type: object
 additionalProperties: false
 required:
 - eventId
@@ -417,7 +417,7 @@ oneOf:
   not:
     required:
     - draftId
-</code></pre></details><details><summary>contracts/s3-events.yaml#/channels/S3ObjectsReconcile</summary><pre class="doc-code"><code>address: s3.objects.reconcile
+</code></pre></details><details><summary>../asyncapi/s3-events.yaml#/channels/S3ObjectsReconcile</summary><pre class="doc-code"><code>address: s3.objects.reconcile
 description: Reconcile the objects under a prefix while keeping the listed object
   names.
 x-source:
@@ -429,15 +429,15 @@ x-jetstream:
 messages:
   S3ObjectsReconcile:
     $ref: &#x27;#/components/messages/S3ObjectsReconcile&#x27;
-</code></pre></details><details><summary>contracts/s3-events.yaml#/channels/S3ObjectsReconcile/messages/S3ObjectsReconcile</summary><pre class="doc-code"><code>$ref: &#x27;#/components/messages/S3ObjectsReconcile&#x27;
-</code></pre></details><details><summary>contracts/s3-events.yaml#/channels/S3ObjectsReconciled</summary><pre class="doc-code"><code>address: s3.objects.reconciled
+</code></pre></details><details><summary>../asyncapi/s3-events.yaml#/channels/S3ObjectsReconcile/messages/S3ObjectsReconcile</summary><pre class="doc-code"><code>$ref: &#x27;#/components/messages/S3ObjectsReconcile&#x27;
+</code></pre></details><details><summary>../asyncapi/s3-events.yaml#/channels/S3ObjectsReconciled</summary><pre class="doc-code"><code>address: s3.objects.reconciled
 description: Confirms that the requested prefix reconciliation completed.
 x-jetstream:
   stream: S3_EVENTS
 messages:
   S3ObjectsReconciled:
     $ref: &#x27;#/components/messages/S3ObjectsReconciled&#x27;
-</code></pre></details><details><summary>contracts/s3-events.yaml#/channels/S3ObjectsReconciled/messages/S3ObjectsReconciled</summary><pre class="doc-code"><code>$ref: &#x27;#/components/messages/S3ObjectsReconciled&#x27;
+</code></pre></details><details><summary>../asyncapi/s3-events.yaml#/channels/S3ObjectsReconciled/messages/S3ObjectsReconciled</summary><pre class="doc-code"><code>$ref: &#x27;#/components/messages/S3ObjectsReconciled&#x27;
 </code></pre></details></div>
   <nav class="doc-related" aria-label="관련 문서"><a href="index.html#message-contract">S3 reconciliation message contract</a></nav>
 </section>

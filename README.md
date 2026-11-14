@@ -13,7 +13,7 @@ Java 25 worker service that consumes NATS JetStream messages and reconciles S3 o
 
 ## Message Contract
 
-The [S3 AsyncAPI contract](docs/contracts/s3-events.yaml) defines the reconciliation command consumed on `s3.objects.reconcile` and the completion event published on `s3.objects.reconciled`.
+The [S3 AsyncAPI contract](asyncapi/s3-events.yaml) defines the reconciliation command consumed on `s3.objects.reconcile` and the completion event published on `s3.objects.reconciled`.
 
 The consumer expects JSON payloads like this:
 
