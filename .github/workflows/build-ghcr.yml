@@ -8,11 +8,11 @@ permissions:
     packages: write
 
 concurrency:
-    group: s3-image-${{ github.ref }}
+    group: s3-consumer-image-${{ github.ref }}
     cancel-in-progress: true
 
 env:
-    IMAGE_NAME: ghcr.io/iterating-io/s3.iterating.io/consumer
+    IMAGE_NAME: ghcr.io/iterating-io/s3-consumer.iterating.io/consumer
 
 jobs:
     build-and-publish:

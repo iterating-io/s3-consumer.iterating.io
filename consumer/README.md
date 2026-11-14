@@ -1,6 +1,6 @@
 # Consumer Module
 
-This module is the application entry point for the S3 isolation consumer.
+This module is the application entry point for the S3 consumer.
 It does not contain NATS implementation details directly. Instead, it depends on the sibling `:nats` module for all JetStream client configuration and consumer wiring.
 
 ## Purpose
@@ -31,7 +31,7 @@ Set required environment variables before running.
 Build the consumer image from the repository root:
 
 ```bash
-docker build -f dockerfile.consumer -t ghcr.io/iterating-io/s3.iterating.io/consumer:local .
+docker build -f dockerfile.consumer -t ghcr.io/iterating-io/s3-consumer.iterating.io/consumer:local .
 ```
 
 Set `SPRING_PROFILES_ACTIVE=prod` and provide production configuration through

@@ -1,0 +1,22 @@
+{
+  "version": 1,
+  "generator": "26215d156955cf6e1c2bf171f0dd4f81c18737c88272bf6c8cd91fb12a0286d9",
+  "map": "339370922aba0f147ef160f4d1c6e24761f8782d2e757ab09fc38ec93f21c300",
+  "inputs": {
+    "content/message-contract.json": "c0ae58da085dbf752f3435c48e65b515dbc1d4a2343e7329bb0ccb9e6633fbf3"
+  },
+  "templates": {
+    "page.html": "3d9a85e300196aad9e1299e3fb2c9fc47b801b934cf153c72b33b26aed520129",
+    "section.html": "3a5ab990458c82287b06a32faa38089a41ad77730a92ff1dc0929e520ad77be3",
+    "sequence.html": "52e6a2b2b2b50471ff6ef8ef6b295ade6dbb6279c54cf120c6324a0b50899680"
+  },
+  "sections": {
+    "message-contract": "5d190b02b329b931dea3649dc24925e9d56e04087e978c4fa3aa7cfa360a2b4b"
+  },
+  "outputs": {
+    ".docs-fragments/message-contract.html": "cfa1e09d1df5f08d32a32472cc8b5bedcaa5199531d7f799d914e69d61aef981",
+    "_assets/docs.css": "087f63aa79c6a6a3ae474a9816f6783113f8291a15e1aa55a074f0d14ca096f8",
+    "_assets/docs.js": "d2fd337494af070ce98e8504bc65a9f2842618789c2a8f4653bd40d2b10658c0",
+    "index.html": "7f592238dcc750957c029662eb9336433acdb29e81f937c314261d330892ed2a"
+  }
+}

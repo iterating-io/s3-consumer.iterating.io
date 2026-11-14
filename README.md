@@ -1,4 +1,4 @@
-# S3 Iterating Consumer
+# S3 Consumer
 
 Java 25 worker service that consumes NATS JetStream messages and reconciles S3 objects. For each valid message, the service copies matching source objects to a backup location, verifies the backup metadata, deletes the original object, and acknowledges the NATS message only after the workflow succeeds.
 

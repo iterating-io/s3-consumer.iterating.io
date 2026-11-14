@@ -12,6 +12,6 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "s3-iterating-consumer"
+rootProject.name = "s3-consumer"
 
 include("consumer", "nats")

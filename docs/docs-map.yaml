@@ -1,5 +1,5 @@
 version: 1
-title: S3 Iterating Consumer Documentation
+title: S3 Consumer Documentation
 sections:
   - id: message-contract
     kind: plaintext

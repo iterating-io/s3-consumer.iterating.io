@@ -1,6 +1,6 @@
 spring:
     application:
-        name: s3-iterating-consumer
+        name: s3-consumer
     main:
         web-application-type: none
 
